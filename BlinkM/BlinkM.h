@@ -19,19 +19,22 @@ typedef struct {
 } blinkm_script_line;
 
 
-class BlinkMClass
+class BlinkM
 {
  private:
     byte addr;  // can only talk to one BlinkM at a time, use talkTo to change
-    byte pwrPin;
     byte gndPin;
+    byte pwrPin;
 
  public: 
-    BlinkMClass(void);
+    BlinkM(void);
+    BlinkM( byte addr );
+    void begin(void);
     void begin( byte addr );
     void talkTo(byte address);
     void setPowerPins(byte pwrpin, byte gndpin);
     void powerUp(void);
+    void powerDown(void);
     
     static int8_t FindFirstI2CDevice(void);
     static void ScanI2CBus(byte from, byte to, 
@@ -46,17 +49,34 @@ class BlinkMClass
     int receiveBytes(byte* resp, byte len);
 
     void setFadeSpeed(byte fadespeed);
+    void setFadeSpeed(byte fadespeed, byte naddr);
+
     void setTimeAdj(byte timeadj);
-    void fadeToRGB(byte red, byte grn, byte blu);
-    void fadeToHSB(byte hue, byte sat, byte bri);
+    void setTimeAdj(byte timeadj, byte naddr);
+
+    void fadeToRGB(byte red, byte grn, byte bri );
+    void fadeToRGB(byte red, byte grn, byte bri, byte naddr );
+
+    void fadeToHSB(byte hue, byte sat, byte bri );
+    void fadeToHSB(byte hue, byte sat, byte bri, byte naddr );
+
     void setRGB(byte red, byte grn, byte blu);
+    void setRGB(byte red, byte grn, byte blu, byte naddr);
+
     void getRGBColor(byte* red, byte* grn, byte* blu);
+
     void fadeToRandomRGB(byte rrnd, byte grnd, byte brnd);
     void fadeToRandomHSB(byte hrnd, byte srnd, byte brnd);
 
+
     void playScript(byte script_id, byte reps, byte pos);
-    void stopScript(void);
+    void playScript(byte script_id, byte reps, byte pos, byte naddr);
+
+    void stopScript( void );
+    void stopScript( byte naddr );
+
     void off(void);
+    void off(byte naddr);
 
     void setScriptLengthReps(byte script_id, byte len, byte reps );
     void readScriptLine(byte script_id, byte pos, 
@@ -78,6 +98,6 @@ class BlinkMClass
 
 };
 
-extern BlinkMClass BlinkM;
+//extern BlinkMClass BlinkM;
 
 #endif

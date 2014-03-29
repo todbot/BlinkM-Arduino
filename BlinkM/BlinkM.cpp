@@ -13,8 +13,12 @@ extern "C" {
 #include "utility/twi.h"  // from Wire library, so we can do bus scanning
 }
 
-//
-BlinkMClass::BlinkMClass() : addr(0x09), gndPin(A2), pwrPin(A3)
+// constructor, sets all defaults
+BlinkM::BlinkM() : addr(0x09), gndPin(A2), pwrPin(A3)
+{
+}
+// constructor with i2c address 
+BlinkM::BlinkM( byte anaddr ) : addr(anaddr), gndPin(A2), pwrPin(A3)
 {
 }
 
@@ -22,7 +26,7 @@ BlinkMClass::BlinkMClass() : addr(0x09), gndPin(A2), pwrPin(A3)
 // each call to twi_writeTo() should return 0 if device is there
 // or other value (usually 2) if nothing is at that address
 // 
-void BlinkMClass::ScanI2CBus(byte from, byte to, 
+void BlinkM::ScanI2CBus(byte from, byte to, 
                               void(*callback)(byte add, byte result) ) 
 {
   byte rc;
@@ -35,7 +39,7 @@ void BlinkMClass::ScanI2CBus(byte from, byte to,
 
 //
 //
-int8_t BlinkMClass::FindFirstI2CDevice(void)
+int8_t BlinkM::FindFirstI2CDevice(void)
 {
   byte rc;
   byte data = 0; // not used, just an address to feed to twi_writeTo()
@@ -47,7 +51,7 @@ int8_t BlinkMClass::FindFirstI2CDevice(void)
 }
 
 // call this before begin() if BlinkM is being powered by Arduino pins
-void BlinkMClass::powerUp(void)
+void BlinkM::powerUp(void)
 {
     pinMode( gndPin, OUTPUT );
     pinMode( pwrPin, OUTPUT );
@@ -56,31 +60,43 @@ void BlinkMClass::powerUp(void)
     delay(100);         // wait for things to stabilize  
 }
 
+//
+void BlinkM::powerDown(void)
+{
+    digitalWrite( pwrPin, LOW );
+}
+
 // 
-void BlinkMClass::setPowerPins(byte pwrpin, byte gndpin)
+void BlinkM::setPowerPins(byte pwrpin, byte gndpin)
 {
     pwrPin = pwrpin;
     gndPin = gndpin;
 }
 
 // Call this first before calling any of the methods below
-void BlinkMClass::begin(byte address)
+void BlinkM::begin()
+{
+    Wire.begin();   // join i2c bus (address optional for master)
+}
+
+// Call this first before calling any of the methods below
+void BlinkM::begin(byte address)
 {
     //pinMode(SDA, INPUT_PULLUP );
     //pinMode(SCL, INPUT_PULLUP );
-    Wire.begin();                // join i2c bus (address optional for master)
     addr = address;
+    begin();
 }
 
 // point at a different BlinkM
-void BlinkMClass::talkTo(byte address)
+void BlinkM::talkTo(byte address)
 {
     addr = address;
 }
 
 // Sets the I2C address of the BlinkM.
 // Uses "general call" broadcast address
-void BlinkMClass::setAddress(byte newaddress)
+void BlinkM::setAddress(byte newaddress)
 {
     addr = newaddress;
 
@@ -97,7 +113,7 @@ void BlinkMClass::setAddress(byte newaddress)
 // Gets the I2C address of the BlinKM
 // Kind of redundant when sent to a specific address
 // but uses to verify BlinkM communication
-int BlinkMClass::getAddress()
+int BlinkM::getAddress()
 {
     Wire.beginTransmission(0); //addr);  // FIXME?
     Wire.write('a');
@@ -113,7 +129,7 @@ int BlinkMClass::getAddress()
 // Demonstrates how to verify you're talking to a BlinkM 
 // and that you know its address
 // Might be more useful to do this check in the caller
-int BlinkMClass::checkAddress()
+int BlinkM::checkAddress()
 {
     int b = getAddress();
     if( b==-1 )
@@ -125,7 +141,7 @@ int BlinkMClass::checkAddress()
 }
 
 // Gets the BlinkM firmware version
-int BlinkMClass::getVersion()
+int BlinkM::getVersion()
 {
     Wire.beginTransmission(addr);
     Wire.write('Z');
@@ -140,7 +156,7 @@ int BlinkMClass::getVersion()
 }
 
 // sends a generic command of length 'cmdlen'
-void BlinkMClass::sendCmd(byte* cmd, int cmdlen)
+void BlinkM::sendCmd(byte* cmd, int cmdlen)
 {
     Wire.beginTransmission(addr);
     for( byte i=0; i<cmdlen; i++) 
@@ -149,11 +165,11 @@ void BlinkMClass::sendCmd(byte* cmd, int cmdlen)
 }
 
 // receives generic data
-// returns 0 on success, and -1 if no data available
+// Returns 0 on success, and -1 if no data available
 // note: responsiblity of caller to know how many bytes to expect
 // FIXME: this doesn't wait for the correct number of bytes, 
 //        so may fail in weird ways
-int BlinkMClass::receiveBytes(byte* resp, byte len)
+int BlinkM::receiveBytes(byte* resp, byte len)
 {
     Wire.requestFrom(addr, len);
     if( Wire.available() ) {
@@ -164,32 +180,46 @@ int BlinkMClass::receiveBytes(byte* resp, byte len)
     return -1;
 }
 
-
+void BlinkM::setFadeSpeed(byte fadespeed)
+{
+    setFadeSpeed(fadespeed,addr);
+}
 // Sets the speed of fading between colors.  
 // Higher numbers means faster fading, 255 == instantaneous fading
-void BlinkMClass::setFadeSpeed(byte fadespeed)
+void BlinkM::setFadeSpeed(byte fadespeed, byte naddr )
 {
-    Wire.beginTransmission(addr);
+    Wire.beginTransmission(naddr);
     Wire.write('f');
     Wire.write(fadespeed);
     Wire.endTransmission();  
 }
 
+void BlinkM::setTimeAdj(byte timeadj)
+{
+    setTimeAdj(timeadj, addr);
+}
+
 // Sets the light script playback time adjust
 // The timeadj argument is signed, and is an additive value to all
 // durations in a light script. Set to zero to turn off time adjust.
-void BlinkMClass::setTimeAdj(byte timeadj)
+void BlinkM::setTimeAdj(byte timeadj, byte naddr)
 {
-    Wire.beginTransmission(addr);
+    Wire.beginTransmission(naddr);
     Wire.write('t');
     Wire.write(timeadj);
     Wire.endTransmission();  
 }
 
 // Fades to an RGB color
-void BlinkMClass::fadeToRGB(byte red, byte grn, byte blu)
+void BlinkM::fadeToRGB(byte red, byte grn, byte blu)
 {
-    Wire.beginTransmission(addr);
+    fadeToRGB(red,grn,blu, addr);
+}
+
+// Fades to an RGB color
+void BlinkM::fadeToRGB(byte red, byte grn, byte blu, byte naddr )
+{
+    Wire.beginTransmission(naddr);
     Wire.write('c');
     Wire.write(red);
     Wire.write(grn);
@@ -198,9 +228,14 @@ void BlinkMClass::fadeToRGB(byte red, byte grn, byte blu)
 }
 
 // Fades to an HSB color
-void BlinkMClass::fadeToHSB(byte hue, byte sat, byte bri)
+void BlinkM::fadeToHSB(byte hue, byte sat, byte bri)
 {
-    Wire.beginTransmission(addr);
+    fadeToHSB( hue,sat,bri, addr);
+}
+// Fades to an HSB color
+void BlinkM::fadeToHSB(byte hue, byte sat, byte bri, byte naddr )
+{
+    Wire.beginTransmission(naddr);
     Wire.write('h');
     Wire.write(hue);
     Wire.write(sat);
@@ -209,9 +244,15 @@ void BlinkMClass::fadeToHSB(byte hue, byte sat, byte bri)
 }
 
 // Sets an RGB color immediately
-void BlinkMClass::setRGB(byte red, byte grn, byte blu)
+void BlinkM::setRGB(byte red, byte grn, byte blu)
 {
-    Wire.beginTransmission(addr);
+    setRGB( red,grn,blu, addr);
+}
+
+// Sets an RGB color immediately
+void BlinkM::setRGB(byte red, byte grn, byte blu, byte naddr )
+{
+    Wire.beginTransmission(naddr);
     Wire.write('n');
     Wire.write(red);
     Wire.write(grn);
@@ -220,7 +261,7 @@ void BlinkMClass::setRGB(byte red, byte grn, byte blu)
 }
 
 // Fades to a random RGB color
-void BlinkMClass::fadeToRandomRGB(byte rrnd, byte grnd, byte brnd)
+void BlinkM::fadeToRandomRGB(byte rrnd, byte grnd, byte brnd)
 {
     Wire.beginTransmission(addr);
     Wire.write('C');
@@ -231,7 +272,7 @@ void BlinkMClass::fadeToRandomRGB(byte rrnd, byte grnd, byte brnd)
 }
 
 // Fades to a random HSB color
-void BlinkMClass::fadeToRandomHSB(byte hrnd, byte srnd, byte brnd)
+void BlinkM::fadeToRandomHSB(byte hrnd, byte srnd, byte brnd)
 {
     Wire.beginTransmission(addr);
     Wire.write('H');
@@ -242,7 +283,7 @@ void BlinkMClass::fadeToRandomHSB(byte hrnd, byte srnd, byte brnd)
 }
 
 // Gets current RGB value being displayed
-void BlinkMClass::getRGBColor(byte* r, byte* g, byte* b)
+void BlinkM::getRGBColor(byte* r, byte* g, byte* b)
 {
     Wire.beginTransmission(addr);
     Wire.write('g');
@@ -256,11 +297,17 @@ void BlinkMClass::getRGBColor(byte* r, byte* g, byte* b)
         //}
 }
 
+//
+void BlinkM::playScript(byte script_id, byte reps, byte pos)
+{
+    playScript( script_id, reps, pos, addr);
+}
+
 // Plays light script 'script_id' on the BlinkM, 
 // at position 'pos', repeating 'reps' times
-void BlinkMClass::playScript(byte script_id, byte reps, byte pos)
+void BlinkM::playScript(byte script_id, byte reps, byte pos, byte naddr)
 {
-    Wire.beginTransmission(addr);
+    Wire.beginTransmission(naddr);
     Wire.write('p');
     Wire.write(script_id);
     Wire.write(reps);
@@ -269,24 +316,35 @@ void BlinkMClass::playScript(byte script_id, byte reps, byte pos)
 }
 
 // Stops any script currently playing on the BlinkM
-void BlinkMClass::stopScript(void)
+//void BlinkM::stopScript(void)
+void BlinkM::stopScript(void)
 {
-    Wire.beginTransmission(addr);
+    stopScript(addr);
+}
+//
+void BlinkM::stopScript(byte naddr)
+{
+    Wire.beginTransmission(naddr);
     Wire.write('o');
     Wire.endTransmission();
 }
 
 // Stops a blinkm from playing a script, resets fadespeed, sets color to black
-void BlinkMClass::off(void)
+void BlinkM::off(void)
 {
-    stopScript();
-    setFadeSpeed(10);
-    setRGB( 0,0,0 );
+    off(addr);
+}
+// Stops a blinkm from playing a script, resets fadespeed, sets color to black
+void BlinkM::off(byte naddr)
+{
+    stopScript(naddr);
+    setFadeSpeed(naddr,10);
+    setRGB( naddr, 0,0,0);
 }
 
 // Sets the script length and repeats of the given script_id
 // (currently only script_id 0 is supported for writing)
-void BlinkMClass::setScriptLengthReps(byte script_id, byte len, byte reps)
+void BlinkM::setScriptLengthReps(byte script_id, byte len, byte reps)
 {
     Wire.beginTransmission(addr);
     Wire.write('l');
@@ -298,7 +356,7 @@ void BlinkMClass::setScriptLengthReps(byte script_id, byte len, byte reps)
 
 // Fill up script_line with data from a script line
 // currently only script_id = 0 works (eeprom script)
-void BlinkMClass::readScriptLine(byte script_id, 
+void BlinkM::readScriptLine(byte script_id, 
                                  byte pos, blinkm_script_line* script_line)
 {
     Wire.beginTransmission(addr);
@@ -316,7 +374,7 @@ void BlinkMClass::readScriptLine(byte script_id,
 }
 
 // (currently only script_id 0 is supported for writing)
-void BlinkMClass::writeScriptLine(byte script_id, 
+void BlinkM::writeScriptLine(byte script_id, 
                                   byte pos, byte dur,
                                   byte cmd, byte arg1, byte arg2, byte arg3)
 {
@@ -338,7 +396,7 @@ void BlinkMClass::writeScriptLine(byte script_id,
 }
 
 
-void BlinkMClass::writeScript(byte script_id, 
+void BlinkM::writeScript(byte script_id, 
                         byte len, byte reps,
                         blinkm_script_line* lines)
 {
@@ -355,7 +413,7 @@ void BlinkMClass::writeScript(byte script_id,
 }
 
 // Set the 'boot' parameters of a BlinkM
-void BlinkMClass::setStartupParams(byte mode, byte script_id,
+void BlinkM::setStartupParams(byte mode, byte script_id,
                               byte reps, byte fadespeed, byte timeadj)
 {
     Wire.beginTransmission(addr);
@@ -371,7 +429,7 @@ void BlinkMClass::setStartupParams(byte mode, byte script_id,
 // Gets inputs of the BlinkM
 // stores them in passed in array
 // returns -1 on failure
-int BlinkMClass::getInputs(byte inputs[])
+int BlinkM::getInputs(byte inputs[])
 {
     Wire.beginTransmission(addr);
     Wire.write('i');
@@ -388,7 +446,7 @@ int BlinkMClass::getInputs(byte inputs[])
 }
 
 // FIXME: test
-int BlinkMClass::doFactoryReset(void) 
+int BlinkM::doFactoryReset(void) 
 {
     setAddress( 0x09 );
 
@@ -431,7 +489,7 @@ int BlinkMClass::doFactoryReset(void)
 // -------------------------------------------------------------------------
 
 //
-void BlinkMClass::mk2setLED(byte ledn)
+void BlinkM::mk2setLED(byte ledn)
 {
   Wire.beginTransmission(addr);
   Wire.write('l');
@@ -440,7 +498,7 @@ void BlinkMClass::mk2setLED(byte ledn)
 }
 
 //
-void BlinkMClass::mk2rotateLEDs(byte rot)
+void BlinkM::mk2rotateLEDs(byte rot)
 {
   Wire.beginTransmission(addr);
   Wire.write('r');
@@ -450,4 +508,4 @@ void BlinkMClass::mk2rotateLEDs(byte rot)
 
 
 // Preinstantiate Object
-BlinkMClass BlinkM = BlinkMClass();
+//BlinkM BlinkM = BlinkMClass();

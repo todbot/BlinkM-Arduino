@@ -32,6 +32,8 @@ const boolean BLINKM_ARDUINO_POWERED = true;
 
 byte blinkm_addr = 0x09; // the default address of all BlinkMs
 
+BlinkM blinkm = BlinkM( blinkm_addr );
+
 const int serStrLen = 30;
 char serInStr[ serStrLen ];  // array that will hold the serial input string
 
@@ -70,7 +72,7 @@ void scanfunc( byte addr, byte result )
 void lookForBlinkM() 
 {
   Serial.print("Looking for a BlinkM: ");
-  int a = BlinkM.FindFirstI2CDevice();
+  int a = blinkm.FindFirstI2CDevice();
   if( a == -1 ) {
     Serial.println("No I2C devices found");
   } else { 
@@ -87,23 +89,23 @@ void setup()
   Serial.println("\nBlinkMTester!");
 
   if( BLINKM_ARDUINO_POWERED ) {
-    BlinkM.powerUp();
+    blinkm.powerUp();
   }
 
-  BlinkM.begin( blinkm_addr );  
+  blinkm.begin( blinkm_addr );  
 
   delay(100); // wait a bit for things to stabilize
   
-  BlinkM.off(); 
+  blinkm.off();  // turn off the playing light script
 
-  //BlinkM.setAddress( blinkm_addr );  // uncomment to set address
+  //blinkm.setAddress( blinkm_addr );  // uncomment to set address to default
 
   help();
   
   lookForBlinkM();
 
   /*
-  byte addr = BlinkM.getAddress(blinkm_addr);
+  byte addr = blinkm.getAddress(blinkm_addr);
   if( addr != blinkm_addr ) {
     if( addr == -1 ) 
       Serial.println("\r\nerror: no response");
@@ -146,19 +148,19 @@ void loop()
 
       if( cmd == 'c' ) {
         Serial.print("Fade to r,g,b:");
-        BlinkM.fadeToRGB( a,b,c );
+        blinkm.fadeToRGB( a,b,c );
       } 
       else if( cmd == 'h' ) {
         Serial.print("Fade to h,s,b:");
-        BlinkM.fadeToHSB( a,b,c );
+        blinkm.fadeToHSB( a,b,c );
       } 
       else if( cmd == 'C' ) {
         Serial.print("Random by r,g,b:");
-        BlinkM.fadeToRandomRGB( a,b,c );
+        blinkm.fadeToRandomRGB( a,b,c );
       } 
       else if( cmd == 'H' ) {
         Serial.print("Random by h,s,b:");
-        BlinkM.fadeToRandomHSB( a,b,c );
+        blinkm.fadeToRandomHSB( a,b,c );
       }
       Serial.print(a,HEX); Serial.print(",");
       Serial.print(b,HEX); Serial.print(",");
@@ -166,25 +168,25 @@ void loop()
     }
     else if( cmd == 'f' ) {
       Serial.print("Set fade speed to:"); Serial.println(num,DEC);
-      BlinkM.setFadeSpeed(num);
+      blinkm.setFadeSpeed(num);
     }
     else if( cmd == 't' ) {
       Serial.print("Set time adj:"); Serial.println(num,DEC);
-      BlinkM.setTimeAdj(num);
+      blinkm.setTimeAdj(num);
     }
     else if( cmd == 'p' ) {
       Serial.print("Play script #");
       Serial.println(num,DEC);
-      BlinkM.playScript(num,0,0 );
+      blinkm.playScript(num,0,0 );
     }
     else if( cmd == 'o' ) {
       Serial.println("Stop script");
-      BlinkM.stopScript();
+      blinkm.stopScript();
     }
     else if( cmd == 'g' ) {
       Serial.print("Current color: ");
       byte r,g,b;
-      BlinkM.getRGBColor(&r,&g,&b);
+      blinkm.getRGBColor(&r,&g,&b);
       Serial.print("r,g,b:"); Serial.print(r,HEX);
       Serial.print(",");      Serial.print(g,HEX);
       Serial.print(",");      Serial.println(b,HEX);
@@ -194,7 +196,7 @@ void loop()
       Serial.println("Writing new eeprom script");
       for(int i=0; i<6; i++) {
       blinkm_script_line l = script_lines[i];
-      BlinkM.writeScriptLine( blinkm_addr, 0, i, l.dur,
+      blinkm.writeScriptLine( blinkm_addr, 0, i, l.dur,
       l.cmd[0],l.cmd[1],l.cmd[2],l.cmd[3]);
       }
       }
@@ -203,28 +205,28 @@ void loop()
       if( num>0 && num<0xff ) {
         Serial.print("Setting address to: ");
         Serial.println(num,DEC);
-        BlinkM.setAddress(num);
+        blinkm.setAddress(num);
         blinkm_addr = num;
       } else if ( num == 0 ) {
         Serial.println("Resetting address to default 9: ");
         blinkm_addr = 9;
-        BlinkM.setAddress(blinkm_addr);
+        blinkm.setAddress(blinkm_addr);
       }
     }
     else if( cmd == 'a' ) {
       Serial.print("Address: ");
-      //num = BlinkM.getAddress(0); 
-      num = BlinkM.getAddress(); 
+      //num = blinkm.getAddress(0); 
+      num = blinkm.getAddress(); 
       Serial.println(num);
     }
     else if( cmd == '@' ) {
-      Serial.print("Will now talk on BlinkM address: ");
+      Serial.print("Will now talk on blinkm address: ");
       Serial.println(num,DEC);
       blinkm_addr = num;
     }
     else if( cmd == 'Z' ) { 
-      Serial.print("BlinkM version: ");
-      num = BlinkM.getVersion();
+      Serial.print("blinkm version: ");
+      num = blinkm.getVersion();
       if( num == -1 )
         Serial.println("couldn't get version");
       Serial.print( (char)(num>>8) ); 
@@ -232,12 +234,12 @@ void loop()
     }
     else if( cmd == 'B' ) {
       Serial.print("Set startup mode:"); Serial.println(num,DEC);
-      BlinkM.setStartupParams(num, 0,0,1,0);
+      blinkm.setStartupParams(num, 0,0,1,0);
     }
     else if( cmd == 'i' ) {
       Serial.print("get Inputs: ");
       byte inputs[4];
-      BlinkM.getInputs(inputs); 
+      blinkm.getInputs(inputs); 
       for( byte i=0; i<4; i++ ) {
         Serial.print(inputs[i],HEX);
         Serial.print( (i<3)?',':'\n');
@@ -248,23 +250,23 @@ void loop()
     }
     else if( cmd == 'S' ) {
       Serial.println("Scanning I2C bus from 1-100:");
-      BlinkM.ScanI2CBus(1,100, scanfunc);
+      blinkm.ScanI2CBus(1,100, scanfunc);
       Serial.println();
     }
     else if( cmd == 'R' ) {
       Serial.println("Doing Factory Reset");
       blinkm_addr = 0x09;
-      BlinkM.doFactoryReset();
+      blinkm.doFactoryReset();
     }
     else if( cmd == 'l' ) { 
         Serial.print("Set LEDn: ");
         Serial.println(num, BIN);
-        BlinkM.mk2setLED( num );
+        blinkm.mk2setLED( num );
     }
     else if( cmd == 'r' ) { 
         Serial.print("rotate LEDs: ");
         Serial.println(num);
-        BlinkM.mk2rotateLEDs( num );
+        blinkm.mk2rotateLEDs( num );
     }
     else if( cmd == '!' ) {
       Serial.print("");
