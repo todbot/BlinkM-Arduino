@@ -1,3 +1,16 @@
+/*
+ * BlinkM.h-- Arduino library to control BlinkM family products
+ * --------------
+ *
+ *
+ * Note: original version of this started as "BlinkM_funcs.h" 
+ *      located in https://code.google.com/p/blinkm-projects/
+ *
+ *
+ * 2007-14, Tod E. Kurt, ThingM, http://thingm.com/
+ *
+ */
+
 #ifndef BLINKM_H
 #define BLINKM_H
 
@@ -40,7 +53,7 @@ class BlinkM
     static void ScanI2CBus(byte from, byte to, 
                            void(*callback)(byte add, byte result) );
 
-    void setAddress(byte address);
+    void changeAddress(byte address);
     int getAddress(void);
     int checkAddress(void);
     int getVersion(void);

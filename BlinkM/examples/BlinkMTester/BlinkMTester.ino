@@ -30,9 +30,9 @@
 // otherwise you can set it to false or just leave it alone
 const boolean BLINKM_ARDUINO_POWERED = true;
 
-byte blinkm_addr = 0x09; // the default address of all BlinkMs
+const byte blinkm_addr_default = 0x09; // the default address of all BlinkMs
 
-BlinkM blinkm = BlinkM( blinkm_addr );
+BlinkM blinkm = BlinkM();
 
 const int serStrLen = 30;
 char serInStr[ serStrLen ];  // array that will hold the serial input string
@@ -69,16 +69,18 @@ void scanfunc( byte addr, byte result )
   Serial.print( (addr%4) ? "\t":"\n");
 }
 
+// look for the first blinkm on the i2c bus and set up talk to it
 void lookForBlinkM() 
 {
   Serial.print("Looking for a BlinkM: ");
-  int a = blinkm.FindFirstI2CDevice();
-  if( a == -1 ) {
+  int ad = blinkm.FindFirstI2CDevice();
+  if( ad == -1 ) {
     Serial.println("No I2C devices found");
   } else { 
     Serial.print("Device found at addr ");
-    Serial.println( a, DEC);
-    blinkm_addr = a;
+    Serial.println( ad, DEC);
+    //blinkm_addr = ad;
+    blinkm.talkTo( ad );
   }
 }
 
@@ -92,17 +94,15 @@ void setup()
     blinkm.powerUp();
   }
 
-  blinkm.begin( blinkm_addr );  
+  blinkm.begin();
 
-  delay(100); // wait a bit for things to stabilize
-  
+  lookForBlinkM();
+
   blinkm.off();  // turn off the playing light script
 
-  //blinkm.setAddress( blinkm_addr );  // uncomment to set address to default
+  //blinkm.setAddress( blinkm_addr_default );  // uncomment to set address to default
 
   help();
-  
-  lookForBlinkM();
 
   /*
   byte addr = blinkm.getAddress(blinkm_addr);
@@ -205,12 +205,12 @@ void loop()
       if( num>0 && num<0xff ) {
         Serial.print("Setting address to: ");
         Serial.println(num,DEC);
-        blinkm.setAddress(num);
-        blinkm_addr = num;
+        blinkm.changeAddress(num);
+        //blinkm_addr = num;
       } else if ( num == 0 ) {
         Serial.println("Resetting address to default 9: ");
-        blinkm_addr = 9;
-        blinkm.setAddress(blinkm_addr);
+        //blinkm_addr = 9;
+        blinkm.changeAddress( blinkm_addr_default );
       }
     }
     else if( cmd == 'a' ) {
@@ -222,7 +222,7 @@ void loop()
     else if( cmd == '@' ) {
       Serial.print("Will now talk on blinkm address: ");
       Serial.println(num,DEC);
-      blinkm_addr = num;
+      blinkm.talkTo( num );
     }
     else if( cmd == 'Z' ) { 
       Serial.print("blinkm version: ");
@@ -255,7 +255,6 @@ void loop()
     }
     else if( cmd == 'R' ) {
       Serial.println("Doing Factory Reset");
-      blinkm_addr = 0x09;
       blinkm.doFactoryReset();
     }
     else if( cmd == 'l' ) { 

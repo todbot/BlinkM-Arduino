@@ -1,9 +1,16 @@
+/*
+ * BlinkM.cpp -- Arduino library to control BlinkM family products
+ * --------------
+ *
+ *
+ * Note: original version of this started as "BlinkM_funcs.h" 
+ *      located in https://code.google.com/p/blinkm-projects/
+ *
+ *
+ * 2007-14, Tod E. Kurt, ThingM, http://thingm.com/
+ *
+ */
 
-//
-// ------------------------------------------------------
-// BlinkM functions
-// ------------------------------------------------------
-//
 
 #include "BlinkM.h"
 
@@ -94,9 +101,9 @@ void BlinkM::talkTo(byte address)
     addr = address;
 }
 
-// Sets the I2C address of the BlinkM.
+// Changes the I2C address of the BlinkM.
 // Uses "general call" broadcast address
-void BlinkM::setAddress(byte newaddress)
+void BlinkM::changeAddress(byte newaddress)
 {
     addr = newaddress;
 
@@ -338,8 +345,8 @@ void BlinkM::off(void)
 void BlinkM::off(byte naddr)
 {
     stopScript(naddr);
-    setFadeSpeed(naddr,10);
-    setRGB( naddr, 0,0,0);
+    setFadeSpeed(10, naddr);
+    setRGB(0,0,0, naddr);
 }
 
 // Sets the script length and repeats of the given script_id
@@ -448,9 +455,9 @@ int BlinkM::getInputs(byte inputs[])
 // FIXME: test
 int BlinkM::doFactoryReset(void) 
 {
-    setAddress( 0x09 );
+    changeAddress( 0x09 );
 
-    delay(30);
+    delay(30);  // delay to wait for EEPROM to be written
 
     //setStartupParamsDefault( 0x09 );
     
