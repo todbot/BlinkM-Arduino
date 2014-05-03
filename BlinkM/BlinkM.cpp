@@ -17,7 +17,7 @@
 #include <stdlib.h>
 
 extern "C" { 
-#include "utility/twi.h"  // from Wire library, so we can do bus scanning
+#include "utility/twi.h"  // from Wire library, so we can do bus scanning, only AVR?
 }
 
 // constructor, sets all defaults
