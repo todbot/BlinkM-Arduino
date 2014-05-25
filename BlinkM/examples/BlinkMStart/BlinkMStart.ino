@@ -41,7 +41,7 @@ void loop()
     Serial.print("Fading to hue ");
     Serial.println(hue);
     
-    //blinkm.fadeToHSB( hue, 255, 255);
+    blinkm.fadeToHSB( hue, 255, 255);
     
     delay(1000);
   }
