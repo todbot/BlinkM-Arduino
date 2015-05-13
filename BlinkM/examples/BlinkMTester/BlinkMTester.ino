@@ -63,7 +63,7 @@ const char helpstr[] PROGMEM =
 // called when address is found in BlinkM_scanI2CBus()
 void scanfunc( byte addr, byte result )
 {
-  Serial.print("addr: ");
+  Serial.print(F("addr: "));
   Serial.print(addr,DEC);
   Serial.print( (result==0) ? " found!":"       ");
   Serial.print( (addr%4) ? "\t":"\n");
@@ -72,12 +72,12 @@ void scanfunc( byte addr, byte result )
 // look for the first blinkm on the i2c bus and set up talk to it
 void lookForBlinkM() 
 {
-  Serial.print("Looking for a BlinkM: ");
+  Serial.print(F("Looking for a BlinkM: "));
   int ad = blinkm.FindFirstI2CDevice();
   if( ad == -1 ) {
-    Serial.println("No I2C devices found");
+    Serial.println(F("No I2C devices found"));
   } else { 
-    Serial.print("Device found at addr ");
+    Serial.print(F("Device found at addr "));
     Serial.println( ad, DEC);
     //blinkm_addr = ad;
     blinkm.talkTo( ad );
@@ -87,8 +87,9 @@ void lookForBlinkM()
 // arduino setup func
 void setup()
 {
-  Serial.begin(19200);
-  Serial.println("\nBlinkMTester!");
+  while(!Serial);
+  Serial.begin(9600);
+  Serial.println(F("\nBlinkMTester!"));
 
   if( BLINKM_ARDUINO_POWERED ) {
     blinkm.powerUp();
@@ -100,7 +101,7 @@ void setup()
 
   blinkm.off();  // turn off the playing light script
 
-  //blinkm.setAddress( blinkm_addr_default );  // uncomment to set address to default
+  //blinkm.setAddress( blinkm_addr_default );  // uncomment to auto set address to default
 
   help();
 
@@ -115,7 +116,7 @@ void setup()
     }
   }
   */
-  Serial.print("cmd>");
+  Serial.print(F("cmd>"));
 }
 
 // arduino loop func
@@ -289,18 +290,10 @@ uint8_t readSerialString()
   return n;
 }
 
-// There are cases where we can't use the obvious Serial.println(str) because
-// the string is PROGMEM and Serial doesn't know how to deal with that
-// (we store strings in PROGMEM instead of normal RAM to save RAM space)
-void printProgStr(const prog_char str[])
-{
-  char c;
-  if(!str) return;
-  while((c = pgm_read_byte(str++)))
-    Serial.write(c);
-}
-
+// print help message
 void help()
 {
-  printProgStr( helpstr );
+  for( int i=0; i<strlen(helpstr); i++ ) { 
+    Serial.print( (char) pgm_read_byte(helpstr+i) );
+  }
 }

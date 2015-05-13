@@ -21,16 +21,14 @@ void setup()
 {
   delay(1000);
   pinMode(ledPin, OUTPUT);
-
  
-  blinkm.powerUp();  // use Analog pins A3 & A3 as power pins (only works for Arudino Uno)
+  blinkm.powerUp();  // use analog pins A3,A2 as power pins (works for Uno)
 
   blinkm.begin();
   blinkm.off();     // stop script and go to black
   
-  
   delay(1000);
-  Serial.begin(19200);
+  Serial.begin(9600);
   Serial.println("BlinkStart ready");
 }
 
@@ -43,5 +41,5 @@ void loop()
     
     blinkm.fadeToHSB( hue, 255, 255);
     
-    delay(1000);
-  }
+    delay(500);
+}

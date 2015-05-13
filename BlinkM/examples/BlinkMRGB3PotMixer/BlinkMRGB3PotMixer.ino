@@ -56,8 +56,8 @@ void setup()
 
   pinMode(butPin, INPUT_PULLUP);  // use internal pullup so press == LOW
 
-  if (DEBUG) {           // If we want to see the pin values for debugging...
-    Serial.begin(19200);  // ...set up the serial ouput in 0004 format
+  if (DEBUG) {          // If we want to see the pin values for debugging...
+    Serial.begin(9600); 
     Serial.println("BlinkMRGB3PotMixer");
   }
 

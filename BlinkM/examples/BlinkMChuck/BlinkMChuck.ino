@@ -32,7 +32,7 @@ BlinkM blinkm = BlinkM();
 
 void setup()
 {
-    Serial.begin(19200);
+    Serial.begin(9600);
     
     blinkm.powerUp();
     blinkm.begin();

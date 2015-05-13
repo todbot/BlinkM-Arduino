@@ -41,7 +41,7 @@ void setup()
 {
     blinkm.begin();
 
-    Serial.begin(19200);
+    Serial.begin(9600);
 
     help();
     Serial.print("cmd>");

@@ -29,7 +29,7 @@ void setup()
   blinkm.begin();
   blinkm.stopScript();  // turn off startup script
 
-  Serial.begin(19200);
+  Serial.begin(9600);
   Serial.println("BlinkSimpleMSensor ready");
 }
 

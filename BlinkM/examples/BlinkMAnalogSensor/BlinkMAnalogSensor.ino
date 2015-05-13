@@ -27,9 +27,8 @@ void setup()
   blinkm.powerUp();
   blinkm.begin(); 
   blinkm.stopScript( );  // turn off startup script
-  blinkm.stopScript( 3 );  // turn off startup script
 
-  Serial.begin(19200);
+  Serial.begin(9600);
   Serial.println("BlinkMAnalogSensor ready");
 }
 

@@ -57,7 +57,7 @@ void toggleLed() {
 
 void setup()
 {
-    Serial.begin(19200);
+    Serial.begin(9600);
 
     //Use ledPin to flash when we get stuff
     pinMode(ledPin, OUTPUT);
