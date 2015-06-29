@@ -16,9 +16,9 @@
 
 #include <stdlib.h>
 
-extern "C" { 
-#include "utility/twi.h"  // from Wire library, so we can do bus scanning, only AVR?
-}
+//extern "C" { 
+//#include "utility/twi.h"  // from Wire library, so we can do bus scanning, only AVR?
+//}
 
 // constructor, sets all defaults
 BlinkM::BlinkM() : addr(0x09), gndPin(A2), pwrPin(A3)
@@ -37,9 +37,16 @@ void BlinkM::ScanI2CBus(byte from, byte to,
                               void(*callback)(byte add, byte result) ) 
 {
   byte rc;
-  byte data = 0; // not used, just an address to feed to twi_writeTo()
+  //byte data = 0; // not used, just an address to feed to twi_writeTo()
   for( byte addr = from; addr <= to; addr++ ) {
-    rc = twi_writeTo(addr, &data, 0, 1, 0 );
+    //rc = twi_writeTo(addr, &data, 0, 1, 0 );
+    // cross-platform replacement for above
+    // from: http://playground.arduino.cc/Main/I2cScanner
+    // The i2c_scanner uses the return value of
+    // the Write.endTransmisstion to see if
+    // a device did acknowledge to the address.
+    Wire.beginTransmission(addr);
+    rc = Wire.endTransmission();
     callback( addr, rc );
   }
 }
@@ -49,9 +56,11 @@ void BlinkM::ScanI2CBus(byte from, byte to,
 int8_t BlinkM::FindFirstI2CDevice(void)
 {
   byte rc;
-  byte data = 0; // not used, just an address to feed to twi_writeTo()
+  //byte data = 0; // not used, just an address to feed to twi_writeTo()
   for( byte addr=1; addr < 120; addr++ ) {  // only scan addrs 1-120
-    rc = twi_writeTo(addr, &data, 0, 1, 0);
+    //rc = twi_writeTo(addr, &data, 0, 1, 0);
+    Wire.beginTransmission(addr);
+    rc = Wire.endTransmission();
     if( rc == 0 ) return addr; // found an address
   }
   return -1; // no device found in range given
