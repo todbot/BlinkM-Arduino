@@ -98,8 +98,6 @@ void BlinkM::begin()
 // Call this first before calling any of the methods below
 void BlinkM::begin(byte address)
 {
-    //pinMode(SDA, INPUT_PULLUP );
-    //pinMode(SCL, INPUT_PULLUP );
     addr = address;
     begin();
 }
@@ -110,19 +108,27 @@ void BlinkM::talkTo(byte address)
     addr = address;
 }
 
+byte BlinkM::getTalkToAddress()
+{
+    return addr;
+}
+
 // Changes the I2C address of the BlinkM.
-// Uses "general call" broadcast address
+// Used to use "general call" broadcast address
+// hmm why can't I use General Call address 0 with Wire slave? (gets a NACK on addr)
 void BlinkM::changeAddress(byte newaddress)
 {
-    addr = newaddress;
-
-    Wire.beginTransmission(0x00);  // general call (broadcast address)
+    Wire.beginTransmission(addr); // 0x00);  // general call (broadcast address)
     Wire.write('A');
     Wire.write(newaddress);
     Wire.write(0xD0);
     Wire.write(0x0D);  // dood!
     Wire.write(newaddress);
     Wire.endTransmission();
+    //int rc = Wire.endTransmission(true);
+    //Serial.print("blinkm.changeaddress rc:");Serial.println(rc);
+    
+    addr = newaddress;
     delay(10);  // wait for it to write to EEPROM
 }
 
@@ -131,7 +137,7 @@ void BlinkM::changeAddress(byte newaddress)
 // but uses to verify BlinkM communication
 int BlinkM::getAddress()
 {
-    Wire.beginTransmission(0); //addr);  // FIXME?
+    Wire.beginTransmission(addr); //0); //addr);  // FIXME?
     Wire.write('a');
     Wire.endTransmission();
     Wire.requestFrom(addr, (byte)1);
@@ -505,11 +511,18 @@ int BlinkM::doFactoryReset(void)
 // -------------------------------------------------------------------------
 
 //
-void BlinkM::mk2setLED(byte ledn)
+void BlinkM::setLEDn(byte ledn)
 {
   Wire.beginTransmission(addr);
-  Wire.write('l');
+  Wire.write('.');
   Wire.write(ledn);
+  Wire.endTransmission();
+}
+void BlinkM::setBrightness(byte brightness)
+{
+  Wire.beginTransmission(addr);
+  Wire.write('b');
+  Wire.write(brightness);
   Wire.endTransmission();
 }
 

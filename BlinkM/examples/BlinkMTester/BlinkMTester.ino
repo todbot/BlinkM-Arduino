@@ -4,16 +4,17 @@
  *  Once you load this sketch on to your Arduino, open the Serial Monitor
  *  and you'll see a menu of things to do.
  *
+ * 2007-20, Tod E. Kurt, ThingM, http://thingm.com/
+ *
  *
  * BlinkM connections to Arduino Uno
  * PWR - -- gnd -- black -- Gnd
  * PWR + -- +5V -- red   -- 5V
  * I2C d -- SDA -- green -- Analog In 4
- * I2C c -- SCK -- blue  -- Analog In 5
+ * I2C c -- SCL -- blue  -- Analog In 5
  *
  * Note: This sketch DOES NOT reset the I2C address of the BlinkM.
  *       If you want to change the I2C address use the 'A<n>' command.
- *
  *
  * Wiring hookups:
  *
@@ -26,9 +27,11 @@
  * Adafruit Trinket M0 to BlinkM2:
  * Gnd - Gnd, 3V - Vcc, D0 - SDA, D2 - SCL
  *
- * 
  *
- * 2007-20, Tod E. Kurt, ThingM, http://thingm.com/
+ * Can upload to Arduino via commandline with:  
+ *  arduino-cli compile --fqbn arduino:avr:micro BlinkMTester  (say for Arduino Pro Micro)
+ *  arduino-cli -v upload -p /dev/tty.usbmodem141301 --fqbn arduino:avr:micro BlinkMTester
+ *
  *
  */
 
@@ -51,7 +54,7 @@ const byte blinkm_addr_default = 0x09; // the default address of all BlinkMs
 BlinkM blinkm = BlinkM();
 
 const int serStrLen = 30;
-char serInStr[ serStrLen ];  // array that will hold the serial input string
+String serInStr = String(serStrLen);
 
 
 // print help message
@@ -63,31 +66,35 @@ void help()
   "'h<hhssbb>'  fade to an hsb color\n"
   "'C<rrggbb>'  fade to a random rgb color\n"
   "'H<hhssbb>'  fade to a random hsb color\n"
-  "'p<n>'  play a script\n"
-  "'o'  stop a script\n"
-  "'f<nn>'  change fade speed\n"
-  "'t<nn>'  set time adj\n"
-  "'g'  get current color\n"
-  "'a'  get I2C address\n"
-  "'A<n>'  set I2C address\n"
-  "'B'  set startup params to default\n"
-  "'Z'  get BlinkM version\n"
-  "'i'  get input values\n"
-  "'b'  set brightness (0-255) (v2)\n"
-  "'.'  set which LED to act on (0=all) (v2)\n"
-  "'s'/'S'  scan i2c bus for 1st BlinkM / search for devices\n"
-  "'R'  return BlinkM to factory settings\n"    
-  "'?'  for this help msg\n\n"
+  "'p<n>'       play a script\n"
+  "'o'          stop currrently playing script\n"
+  "'O'          stop script and turn off BlinkM\n"
+  "'f<nn>'      change fade speed\n"
+  "'t<nn>'      set time adj\n"
+  "'g'          get current color\n"
+  "'a'          get I2C address\n"
+  "'A<n>'       set I2C address\n"
+  "'Z'          get BlinkM version\n"
+  "'i'          get input values\n"
+  "'B'          set startup params to default\n"
+  "'R<nn>'      read EEPROM script line\n"
+  "'W'          write EEPROM scirpt line\n"
+  "'b'          set brightness (v2)\n"
+  "'.'          set which LED to act on (0=all) (v2)\n"
+  "'s'/'S'      scan i2c bus for 1st BlinkM / search for devices\n"
+  "'@<nn>'      select which BlinkM addr to talk on\n"
+  "'!'          return BlinkM to factory settings\n"    
+  "'?'          for this help msg\n\n"
                       ));
 }
 
 // called when address is found in BlinkM_scanI2CBus()
 void scanfunc( byte addr, byte result )
 {
-  Serial.print(F("addr: "));
-  Serial.print(addr,DEC);
-  Serial.print( (result==0) ? F(" found!"):F("       "));
-  Serial.print( (addr%4) ? "\t":"\n");
+    Serial.print(F("addr: "));
+    Serial.print(addr,DEC);
+    Serial.print( (result==0) ? F(" found!"):F("       "));
+    Serial.print( (addr%4) ? "\t":"\n");
 }
 
 // look for the first blinkm on the i2c bus and set up talk to it
@@ -137,26 +144,34 @@ void setup()
     }
   }
   */
-  Serial.print(F("cmd> "));
+  printCmdPrompt();
+}
+
+void printCmdPrompt()
+{
+    Serial.print("BlinkM addr ");
+    Serial.print(blinkm.getTalkToAddress());
+    Serial.print(F(": cmd> "));
 }
 
 // arduino loop func
 void loop()
 {
   int32_t num;
-  //read the serial port and create a string out of what you read
-  if( !readSerialString() ) {
-      return;
-  }
-  
+
+  if( !Serial.available() ) { return; }
+  serInStr = Serial.readStringUntil('\n');
   Serial.println(serInStr);
+
   char cmd = serInStr[0];  // first char is command
   
   // argument parsing
-  char* str = serInStr;
+  
+  //char* str = serInStr;
+  const char* str = serInStr.c_str();
   while( *++str == ' ' );  // go past any intervening whitespace
   if( strlen(str) >= 6 ) { // 6 chars in a hex color code
-      str[6] = '\0';
+      //str[6] = '\0';
       num = strtol(str, NULL, 16); // parse color
   } else { 
       num = atoi(str);
@@ -208,6 +223,11 @@ void loop()
       Serial.println(F("Stop script"));
       blinkm.stopScript();
   }
+  else if( cmd == 'O' ) {
+      Serial.println(F("Stop script & turn off"));
+      blinkm.stopScript();
+      blinkm.fadeToRGB( 0,0,0 );
+  }      
   else if( cmd == 'g' ) {
       Serial.print(F("Current color: "));
       byte r,g,b;
@@ -215,6 +235,17 @@ void loop()
       Serial.print("r,g,b:"); Serial.print(r,HEX);
       Serial.print(",");      Serial.print(g,HEX);
       Serial.print(",");      Serial.println(b,HEX);
+  }
+  else if( cmd == 'R' ) {
+      Serial.print(F("Read script line: ")); Serial.println(num,DEC);
+      blinkm_script_line line;
+      blinkm.readScriptLine(0, num, &line);
+      Serial.print(F("  scriptline: duration:")); Serial.print(line.dur);
+      Serial.print(F(" cmd:")); Serial.print((char)line.cmd[0]);
+      for( int i=0; i<4; i++) {
+          Serial.print(','); Serial.print(line.cmd[i]); 
+      }
+      Serial.println();
   }
   else if( cmd == 'W' ) {
       Serial.println(F("Writing new eeprom script"));
@@ -276,7 +307,7 @@ void loop()
       blinkm.ScanI2CBus(1,100, scanfunc);
       Serial.println();
   }
-  else if( cmd == 'R' ) {
+  else if( cmd == '!' ) {
       Serial.println(F("Doing Factory Reset"));
       blinkm.doFactoryReset();
   }
@@ -290,25 +321,24 @@ void loop()
       Serial.println(num);
       blinkm.setBrightness(num);
   }
-  else if( cmd == '!' ) {
-      Serial.print("");
+  else if( cmd == '%' ) {  // free memory  BLINKM2
+      Serial.print("Free RAM: ");
+      uint8_t addr = blinkm.getAddress();
+      Wire.beginTransmission(addr);
+      Wire.write('@');
+      Wire.endTransmission();
+      Wire.requestFrom(addr, (byte)2);
+      while( Wire.available() < 2 ) ;
+      num |= (Wire.read() << 0);
+      num |= (Wire.read() << 8);
+      Serial.println(num);
   }
+          
   else { 
-      Serial.println(F("Unrecognized cmd"));
+      Serial.print(F("Unrecognized cmd '")); Serial.print(serInStr); Serial.println("'");
   }
-  serInStr[0] = 0;  // say we've used the string
+  //serInStr[0] = 0;  // say we've used the string
   
-  Serial.print(F("cmd> "));
+  printCmdPrompt();
   
 }
-
-// read a string from serial and store it in an array
-// uses global variable serInStr
-uint8_t readSerialString()
-{
-  Serial.setTimeout(100);
-  memset( serInStr, 0, sizeof(serInStr) ); // set it all to zero
-  int n = Serial.readBytesUntil( '\n', serInStr, serStrLen );
-  return n;
-}
-

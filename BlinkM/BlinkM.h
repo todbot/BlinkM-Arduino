@@ -43,8 +43,9 @@ class BlinkM
     BlinkM(void);
     BlinkM( byte addr );
     void begin(void);
-    void begin( byte addr );
+    void begin(byte addr);
     void talkTo(byte address);
+    byte getTalkToAddress();
     void setPowerPins(byte pwrpin, byte gndpin);
     void powerUp(void);
     void powerDown(void);
@@ -106,8 +107,11 @@ class BlinkM
 
     int doFactoryReset(void);
 
-    void mk2setLED(byte ledn);
+    // BlinkM2 commands
+    void setLEDn(byte ledn);
+    void setBrightness(byte brightness);
     void mk2rotateLEDs(byte rot);
+    
 
 };
 
